@@ -17,10 +17,10 @@ router.post("/register", async (req, res) => {
   }
   catch (err) {
     if (err.code === 11000) {
-      res.status(500).json({error_code: "EMAIL_ALREADY_EXIST"})
+      res.status(500).json({ error_code: "EMAIL_ALREADY_EXIST" })
     } else {
       res.status(500).json({ msg: `here is an error while creating new user`, err: err });
-      
+
     }
   }
 })
@@ -29,23 +29,28 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
-    !user && res.status(401).json(' not registerd null or can be wrong password or username~')
 
-    const bytes = CryptoJS.AES.decrypt(user.password, process.env.SECRET_KEY);
-    const originalPassword = bytes.toString(CryptoJS.enc.Utf8);
-
-    originalPassword !== req.body.password && res.status(401).json("Wrong password or username!");
-
-    const accessToken = jwt.sign(
-      { id: user._id, isAdmin: user.isAdmin },
-      process.env.SECRET_KEY,
-      { expiresIn: "12h" }
-    );
-
-    if (originalPassword === req.body.password) {
-      const { password, ...info } = user._doc;
-      res.status(200).json({ ...info, accessToken });
+    if(!user) {
+      res.status(401).json({ error_code: "USER_NOT_REGISTER" })
     }
+    else {
+      const bytes = CryptoJS.AES.decrypt(user.password, process.env.SECRET_KEY);
+      const originalPassword = bytes.toString(CryptoJS.enc.Utf8);
+
+      originalPassword !== req.body.password && res.status(401).json("Wrong password or username!");
+
+      const accessToken = jwt.sign(
+        { id: user._id, isAdmin: user.isAdmin },
+        process.env.SECRET_KEY,
+        { expiresIn: "12h" }
+      );
+
+      if (originalPassword === req.body.password) {
+        const { password, ...info } = user._doc;
+        res.status(200).json({ ...info, accessToken });
+      }
+    }
+
   }
   catch (error) {
     // res.status(500).json({msg: "error while login user" , err: err})
